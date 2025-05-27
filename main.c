@@ -16,7 +16,7 @@ struct mem
 } mem;
 
 static struct mem MemoryHead;
-static struct mem MemoryTail;
+static struct mem *MemoryTail;
 
 void *
 ASL_Malloc (size_t size)
@@ -48,43 +48,50 @@ ASL_Malloc (size_t size)
 
     if (MemoryHead.size == 0)
     {
+
+
 #if IS_DEBUG
         printf ("TEST: CREATE NEW HEAD \n");
 #endif
+
         MemoryHead.CurrAddr = ptr;
         MemoryHead.size = size;
-        #if IS_DEBUG
-        printf ("TEST: HEAD ADDR: %p \n",MemoryHead.CurrAddr);
-#endif
-        MemoryTail = MemoryHead;
+        MemoryHead.NextAddr = NULL;
+        MemoryHead.PrevAddr = NULL;
+        MemoryTail = &MemoryHead;
 
+#if IS_DEBUG
+        printf ("TEST: HEAD ADDR: %p \n", MemoryHead.CurrAddr);
+#endif
+
+    
         return MemoryHead.CurrAddr;
     }
     else
     {
        
-        struct mem NewTail;
-        NewTail.CurrAddr = ptr;
-        NewTail.size = size;
-        NewTail.PrevAddr = &MemoryTail;
+        struct mem *NewTail = sbrk(sizeof(struct mem));
+        NewTail->NextAddr = NULL;
+        NewTail->PrevAddr = NULL;
+        NewTail->CurrAddr = ptr;
+        NewTail->size = size;
+        NewTail->PrevAddr = MemoryTail;
+        MemoryTail->NextAddr = NewTail;
+        MemoryTail = MemoryTail->NextAddr;
 
-
-        #if IS_DEBUG
-        printf ("TEST: NEW TAIL ADDR: %p PREV: %p\n",NewTail.CurrAddr,NewTail.PrevAddr);
+#if IS_DEBUG
+        printf ("TEST: NEW TAIL ADDR: %p PREV: %p SIZE:%ld \n", NewTail->CurrAddr, NewTail->PrevAddr, NewTail->size);
 #endif
 
-
-
-        MemoryTail = NewTail;
-
-        return NewTail.CurrAddr;
+       
+        return MemoryTail->CurrAddr;
     }
 
     return NULL;
 }
 
-void 
-ASL_free( void* ptr)
+void
+ASL_free (void *ptr)
 {
     struct mem *Head = &MemoryHead;
     while (Head)
@@ -101,10 +108,10 @@ void
 listMem ()
 {
     struct mem *Head = &MemoryHead;
-    putchar('\n');
+    putchar ('\n');
     while (Head)
     {
-        
+
         printf ("ADDR:%p ADDR.C: %p size %ld FREE?:%d |P:%p N:%p| \n",
             Head,
             Head->CurrAddr,
@@ -117,13 +124,14 @@ listMem ()
 int
 main ()
 {
-    //TODO некорректно выделяется новая память, косяк в связи хвоста и головы 
-    void *a = ASL_Malloc(10);
-    listMem();
-    printf("%p \n", a );
-    ASL_free(a);
-    listMem();
-    a = ASL_Malloc(11);
-    listMem();
+    void *a = ASL_Malloc (10);
+    listMem ();
+    printf ("%p \n", a);
+    ASL_free (a);
+    listMem ();
+    
+    int *b =(int*) ASL_Malloc (11);
+    b[0] = 20;
+    listMem ();
     return 0;
 }
