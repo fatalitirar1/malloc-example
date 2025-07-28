@@ -5,6 +5,8 @@
 
 #define IS_DEBUG 1
 
+#define ALIGN(x) (((((x)-1) >> 3) << 3) + 8)
+
 struct mem
 {
     size_t size;
@@ -13,7 +15,7 @@ struct mem
     struct mem *PrevAddr;
     struct mem *NextAddr;
 
-} mem;
+};
 
 static struct mem MemoryHead;
 static struct mem *MemoryTail;
@@ -24,6 +26,7 @@ ASL_Malloc (size_t size)
 
     void *ptr;
     struct mem *Head = &MemoryHead;
+    size = (size + 7) & ~7;
 
     while (Head)
     {
@@ -71,6 +74,10 @@ ASL_Malloc (size_t size)
     {
        
         struct mem *NewTail = sbrk(sizeof(struct mem));
+        if (NewTail == (void*)-1){
+            printf("error, can't create a new tail\n");
+            return NULL;
+        }
         NewTail->NextAddr = NULL;
         NewTail->PrevAddr = NULL;
         NewTail->CurrAddr = ptr;
