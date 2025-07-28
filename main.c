@@ -5,7 +5,6 @@
 
 #define IS_DEBUG 1
 
-#define ALIGN(x) (((((x)-1) >> 3) << 3) + 8)
 
 struct mem
 {
